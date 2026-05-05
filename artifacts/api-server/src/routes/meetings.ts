@@ -8,13 +8,17 @@ interface Participant {
   peerId: string;
   displayName: string;
   connectionId: string;
-  role: 'host' | 'organizer' | 'speaker' | 'attendee' | 'presentation';
-  joinedAt: number;
+  role: 'Host' | 'Organizer' | 'Speaker' | 'Attendee' | 'Presentation';
+  isAdmitted: boolean;
+  joinedAt: string;
+  json: string;
 }
 
 interface Meeting {
   code: string;
   eventName: string;
+  subtitle?: string;
+  description?: string;
   hostPeerId: string;
   participants: Map<string, Participant>;
   waitingRoom: boolean;
@@ -61,14 +65,22 @@ export function setupSocketIO(server: HTTPServer) {
   io.on("connection", (socket: Socket) => {
     logger.info({ socketId: socket.id }, "Client connected");
 
-    socket.on("create_meeting", async (data: { eventName: string; peerId: string; profileJson?: string }, callback) => {
+    socket.on("create_meeting", async (data: { eventName: string; peerId: string; profileJson?: string; subtitle?: string; description?: string }, callback) => {
       try {
         const code = generateCode();
         const hostSecret = uuidv4();
         
+        let displayName = "Host";
+        try {
+          const profile = JSON.parse(data.profileJson || '{}');
+          if (profile.name) displayName = profile.name;
+        } catch {}
+
         const meeting: Meeting = {
           code,
           eventName: data.eventName,
+          subtitle: data.subtitle,
+          description: data.description,
           hostPeerId: data.peerId,
           participants: new Map(),
           waitingRoom: false,
@@ -77,10 +89,12 @@ export function setupSocketIO(server: HTTPServer) {
 
         const host: Participant = {
           peerId: data.peerId,
-          displayName: "Host",
+          displayName,
           connectionId: socket.id,
-          role: 'host',
-          joinedAt: Date.now()
+          role: 'Host',
+          isAdmitted: true,
+          joinedAt: new Date().toISOString(),
+          json: data.profileJson || '{}'
         };
 
         meeting.participants.set(data.peerId, host);
@@ -93,11 +107,14 @@ export function setupSocketIO(server: HTTPServer) {
 
         socket.emit("MeetingCreated", { meetingCode: code, hostSecret });
         socket.emit("FullState", {
-          room: {
-            meetingCode: code,
-            eventName: data.eventName,
-            participants: { [data.peerId]: host }
-          }
+          meetingCode: code,
+          eventName: data.eventName,
+          subtitle: data.subtitle,
+          description: data.description,
+          hostPeerId: data.peerId,
+          startedAt: new Date(meeting.createdAt).toISOString(),
+          waitingRoomEnabled: meeting.waitingRoom,
+          participants: { [data.peerId]: host }
         });
 
         if (callback) callback();
@@ -118,23 +135,28 @@ export function setupSocketIO(server: HTTPServer) {
           return;
         }
 
-        // Check if already in a meeting
+        // Check if already in a DIFFERENT meeting
         const existingMeeting = peerToMeeting.get(data.peerId);
-        if (existingMeeting) {
+        if (existingMeeting && existingMeeting !== code) {
           socket.leave(existingMeeting);
           cleanUpParticipant(data.peerId);
         }
 
-        const role: Participant['role'] = data.displayName.toLowerCase().includes('present') 
-          ? 'presentation' 
-          : 'attendee';
+        let role: Participant['role'] = 'Attendee';
+        if (data.displayName.toLowerCase().includes('present')) {
+          role = 'Presentation';
+        } else if (data.peerId === meeting.hostPeerId) {
+          role = 'Host';
+        }
 
         const participant: Participant = {
           peerId: data.peerId,
           displayName: data.displayName,
           connectionId: socket.id,
           role,
-          joinedAt: Date.now()
+          isAdmitted: true,
+          joinedAt: new Date().toISOString(),
+          json: data.profileJson || '{}'
         };
 
         meeting.participants.set(data.peerId, participant);
@@ -146,19 +168,18 @@ export function setupSocketIO(server: HTTPServer) {
 
         // Send full state to joining participant
         socket.emit("FullState", {
-          room: {
-            meetingCode: code,
-            eventName: meeting.eventName,
-            participants: Object.fromEntries(meeting.participants)
-          }
+          meetingCode: code,
+          eventName: meeting.eventName,
+          subtitle: meeting.subtitle,
+          description: meeting.description,
+          hostPeerId: meeting.hostPeerId,
+          startedAt: new Date(meeting.createdAt).toISOString(),
+          waitingRoomEnabled: meeting.waitingRoom,
+          participants: Object.fromEntries(meeting.participants)
         });
 
         // Notify others
-        socket.to(code).emit("ParticipantJoined", {
-          peerId: data.peerId,
-          displayName: data.displayName,
-          role
-        });
+        socket.to(code).emit("ParticipantJoined", participant);
 
         if (callback) callback();
       } catch (error: any) {
