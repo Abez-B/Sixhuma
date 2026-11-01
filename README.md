@@ -1,6 +1,13 @@
 <div align="center">
 
-# Sixhuma
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="sixhuma-svelte/static/sixhuma-lockup-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="sixhuma-svelte/static/sixhuma-lockup-light.svg">
+  <img alt="Sixhuma Logo" src="sixhuma-svelte/static/sixhuma-lockup-dark.svg" width="380" />
+</picture>
+
+<br />
+<br />
 
 **Real-Time Spatial Event Directory & Attendee Mesh**
 
