@@ -4,16 +4,27 @@ services:
   api:
     build:
       context: .
-      dockerfile: meetmesh-api/Dockerfile
+      dockerfile: sixhuma-api/Dockerfile
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
       - NODE_ENV=production
+      - DATA_DIR=/app/data
       - ALLOWED_ORIGIN=*
     restart: unless-stopped
     volumes:
       - api-data:/app/data
+
+  web:
+    build:
+      context: .
+      dockerfile: sixhuma-svelte/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   api-data:

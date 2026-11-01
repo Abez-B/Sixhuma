@@ -56,7 +56,10 @@ Thumbs.db
 .cache/
 .local/
 .aider*
+.agents/
+design-plans/
+*.tar.gz
 
 # Experimental prototypes
-meetmesh-svelte/
+# (none)
 

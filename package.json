@@ -5,12 +5,17 @@
   "packageManager": "pnpm@10.33.3",
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "build": "pnpm -r --filter meetmesh-core --filter meetmesh-api --filter meetmesh-frontend run build",
-    "typecheck": "pnpm -r --filter meetmesh-core --filter meetmesh-api --filter meetmesh-frontend run typecheck"
+    "dev": "pnpm --filter sixhuma-api --filter sixhuma-svelte --parallel run dev",
+    "dev:svelte": "pnpm --filter sixhuma-svelte run dev",
+    "dev:api": "pnpm --filter sixhuma-api run dev",
+    "build": "pnpm -r --filter sixhuma-core --filter sixhuma-api --filter sixhuma-svelte run build",
+    "typecheck": "pnpm -r --filter sixhuma-core --filter sixhuma-api --filter sixhuma-svelte run typecheck",
+    "test": "pnpm -r --filter sixhuma-core --filter sixhuma-api --filter sixhuma-svelte run test"
   },
   "private": true,
   "devDependencies": {
     "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "vitest": "^2.1.8"
   }
 }

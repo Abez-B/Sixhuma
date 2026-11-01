@@ -18,19 +18,19 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "MeetMesh Frontend"
+args = "MeetMesh Svelte"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "GitHub Sync"
 
 [[workflows.workflow]]
-name = "MeetMesh Frontend"
+name = "MeetMesh Svelte"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/meetmesh-frontend run dev"
+args = "pnpm --filter meetmesh-svelte run dev"
 waitForPort = 5173
 
 [workflows.workflow.metadata]

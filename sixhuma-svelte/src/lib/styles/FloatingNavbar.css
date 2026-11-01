@@ -1,0 +1,325 @@
+/* ═════════════════════════════════════════════════════════════════
+   FLOATING GLASSMORPHISM NAVBAR (.fn-*)
+   Ultra-modern floating dynamic glass capsule with blur & glow
+═════════════════════════════════════════════════════════════════ */
+
+.fn-wrapper {
+  position: fixed;
+  top: 16px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  padding: 0 16px;
+}
+
+.fn-container {
+  pointer-events: auto;
+  width: min(100%, 1020px);
+  height: 52px;
+  border-radius: 9999px;
+  background: rgba(11, 13, 22, 0.72);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 16px 36px -10px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px 0 16px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Brand ─────────────────────────────────────────── */
+.fn-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.fn-brand-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.fn-brand:hover .fn-brand-logo {
+  transform: scale(1.05);
+}
+
+.fn-brand-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fn-wordmark {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
+}
+
+.fn-badge {
+  display: none;
+}
+
+/* ── Center: Nav items ────────────────────────────────────── */
+.fn-nav-items {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fn-nav-btn {
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 6px 13px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.fn-nav-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.fn-room-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.fn-room-code {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #38bdf8;
+}
+
+.fn-room-copy-btn {
+  background: transparent;
+  border: 0;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Right Actions ──────────────────────────────── */
+.fn-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.fn-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.fn-sound-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  color: #cbd5e1;
+  transition: all 0.15s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.fn-sound-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.fn-cta-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  text-decoration: none;
+}
+
+.fn-cta-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+}
+
+.fn-cta-arrow {
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.fn-cta-btn:hover .fn-cta-arrow {
+  transform: translateX(2px);
+}
+
+.fn-ghost-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.fn-ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+/* ── Mobile Responsive Dynamic Island ────────────────────────── */
+@media (max-width: 768px) {
+  .fn-wrapper {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    padding: 0 12px;
+  }
+
+  .fn-container {
+    height: 44px;
+    padding: 0 6px 0 14px;
+    background: rgba(12, 14, 22, 0.88);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 10px 28px -6px rgba(0, 0, 0, 0.9),
+      0 1px 0 rgba(255, 255, 255, 0.16) inset;
+  }
+
+  .fn-nav-items {
+    display: none;
+  }
+
+  .fn-brand {
+    gap: 7px;
+  }
+
+  .fn-wordmark {
+    font-size: 13.5px;
+    letter-spacing: -0.02em;
+  }
+
+  .fn-badge {
+    display: none;
+  }
+
+  .fn-right {
+    gap: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .fn-status {
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .fn-cta-btn {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #090a0f;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 0;
+    transition: all 0.15s ease;
+  }
+
+  .fn-cta-btn:hover,
+  .fn-cta-btn:active {
+    background: #f1f5f9;
+    color: #000000;
+    transform: scale(0.97);
+  }
+
+  .fn-cta-arrow {
+    display: inline-block;
+    font-size: 11.5px;
+    line-height: 1;
+    transition: transform 0.15s ease;
+  }
+
+  .fn-sound-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}

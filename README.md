@@ -1,255 +1,199 @@
-# Meetmesh
+<div align="center">
 
-A modern, real-time meeting platform built with Node.js, Express, Socket.io, and React. Meetmesh enables seamless communication and collaboration with features like interactive participant visualization, role-based access control, and real-time messaging.
+# Sixhuma
 
-## Project Architecture
+**Real-Time Spatial Event Directory & Attendee Mesh**
 
-Meetmesh is organized as a monorepo using pnpm workspaces with the following structure:
+*Sixhuma* (isiXhosa: *"We connect"*) gives any physical or hybrid gathering a live, interactive attendee constellation. Attendees scan a QR code or enter a 4-letter room code to view profiles, roles, and contacts in real time — with zero app download.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![CI](https://github.com/Abez-B/Sixhuma/actions/workflows/ci.yml/badge.svg)](https://github.com/Abez-B/Sixhuma/actions)
+[![Svelte 5](https://img.shields.io/badge/Svelte-5.x-FF3E00.svg?style=flat-square&logo=svelte&logoColor=white)](https://svelte.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Socket.io](https://img.shields.io/badge/Socket.io-4.x-010101.svg?style=flat-square&logo=socketdotio&logoColor=white)](https://socket.io/)
+[![Node.js](https://img.shields.io/badge/Node.js-22.x-339933.svg?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/Abez-B/Sixhuma/pulls)
+
+[Live Demo](https://sixhuma.vercel.app) · [Report Bug](https://github.com/Abez-B/Sixhuma/issues) · [Request Feature](https://github.com/Abez-B/Sixhuma/issues)
+
+</div>
+
+---
+
+## ⚡ The Problem & The Solution
+
+| The Old Way | The Sixhuma Way |
+| :--- | :--- |
+| Handing out paper badges with tiny printed text | Interactive digital attendee cards updated live |
+| Forcing attendees to install an 80MB conference app | Instant browser load in < 2 seconds via QR or 4-letter code |
+| Manual, lost business cards & LinkedIn searching | 1-click vCard (`.vcf`) contact export straight to phone contacts |
+| Static auditorium slides | Live stage view showing attendee nodes joining in real time |
+| Clumsy attendee management | Host dashboard with admission waiting room, role badges, & kick controls |
+
+---
+
+## ✨ Features
+
+- **🪐 Interactive Attendee Radar**: Physics-based celestial force graph displaying all room participants floating in real-time orbits around the host and speakers.
+- **⚡ Instant Zero-App Entry**: Attendees simply enter a 4-letter code (e.g. `DDMR`) or scan the stage QR code.
+- **🛡️ Host Command Dashboard**: Manage waiting room lobbies, assign roles (*Host*, *Speaker*, *Organizer*, *Attendee*), broadcast announcements, and moderate participants.
+- **📺 Stage Presentation Mode**: Big-screen projector view with high-contrast, room-scannable QR code and dynamic live participant counts.
+- **💬 Real-Time Messaging & Reactions**: Ephemeral global room chat, peer-to-peer DMs, and floating emoji bursts.
+- **📇 Universal Contact Export**: Export attendee details directly to your mobile address book via standardized vCard (`.vcf`) or CSV.
+- **🎵 Harmonic Web Audio Synthesis**: Zero external audio dependencies — programmatic harmonic chimes for joins, messages, announcements, and reactions.
+
+---
+
+## 🏗️ Architecture
+
+Sixhuma is built as a high-performance TypeScript monorepo powered by `pnpm` workspaces:
 
 ```
-meetmesh/
-├── artifacts/               # Build artifacts and example projects
-│   ├── api-server/         # Express API server (Node.js backend)
-│   └── meetmesh-frontend/  # React frontend application (Vite)
-├── lib/                    # Shared libraries and utilities
-│   ├── api-zod/           # Zod schemas for API validation
-│   ├── api-spec/          # OpenAPI specification
-│   ├── db/                # Database configuration and utilities
-│   └── api-client-react/  # React hooks for API communication
-├── meetmesh-core/         # Shared Socket.io client and types
-├── meetmesh-frontend/     # Main React frontend (Active workspace)
-├── meetmesh-api/          # Main Express API server (Active workspace)
-└── scripts/               # Utility scripts and tooling
+sixhuma/
+├── sixhuma-svelte/       # SvelteKit + Svelte 5 frontend (adapter-static)
+├── sixhuma-api/          # Node.js + Express + Socket.io WebSocket relay
+├── sixhuma-core/         # Shared state machine, client SDK, and TypeScript types
+└── scripts/              # Workspace automation & tooling
 ```
 
-## Tech Stack
+```mermaid
+flowchart TD
+    subgraph Clients["Clients (Browsers)"]
+        H["Host Dashboard"]
+        A["Attendee Mobile"]
+        P["Stage Presentation View"]
+    end
 
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web framework
-- **Socket.io** - Real-time communication
-- **Pino** - Structured logging
-- **TypeScript** - Type safety
+    subgraph CDN["Edge CDN (Vercel / Cloudflare)"]
+        FE["sixhuma-svelte<br/>(SvelteKit Static Build)"]
+    end
 
-### Frontend
-- **React 19.1.0** - UI library
-- **Vite** - Build tool and dev server
-- **Framer Motion** - Animation library
-- **D3** - Graph visualization
-- **TailwindCSS** - Utility-first CSS framework
-- **Wouter** - Lightweight router
+    subgraph Server["WebSocket Hub (Render / Docker / Fly)"]
+        API["sixhuma-api<br/>(Express + Socket.io Relay)"]
+        STATE["Room State Machine & Memory Storage"]
+    end
 
-### Infrastructure
-- **pnpm** - Fast, disk space efficient package manager
-- **TypeScript** - For type safety across the project
+    Clients -->|"Loads UI (HTTPS)"| FE
+    H <-->|"WSS (Live Events)"| API
+    A <-->|"WSS (Live Events)"| API
+    P <-->|"WSS (Live Mesh)"| API
+    API <--> STATE
+```
 
-## Prerequisites
+---
 
-- **Node.js** 18.0 or higher
-- **pnpm** 8.0 or higher (install with `npm install -g pnpm`)
+## 🚀 Quickstart (Local Development)
 
-## Getting Started
+### Prerequisites
 
-### 1. Install Dependencies
+- **Node.js**: `v20.0.0` or higher (`v22.x` recommended)
+- **pnpm**: `v10.x` or higher (`npm install -g pnpm`)
+
+### 1. Clone & Install
 
 ```bash
+git clone https://github.com/Abez-B/Sixhuma.git
+cd Sixhuma
 pnpm install
 ```
 
-### 2. Environment Setup
+### 2. Start Development Servers
 
-Copy the example environment files:
-
-```bash
-cp artifacts/api-server/.env.example artifacts/api-server/.env
-cp artifacts/meetmesh-frontend/.env.example artifacts/meetmesh-frontend/.env
-```
-
-Edit the files to match your local development setup.
-
-### 3. Build the Project
+Run both the frontend and WebSocket API concurrently:
 
 ```bash
-pnpm run build
-```
-
-This will:
-- Run TypeScript checks across all packages
-- Build all workspace projects with their respective build scripts
-
-### 4. Development Workflow
-
-#### Start the API Server
-```bash
-cd artifacts/api-server
 pnpm run dev
 ```
 
-The server will start on the port specified in your `.env` file (default: 3001).
+- **Frontend**: [http://localhost:5173](http://localhost:5173)
+- **API / WebSocket Relay**: [http://localhost:3000](http://localhost:3000)
 
-#### Start the Frontend (in another terminal)
+### 3. Run Tests & Validation
+
 ```bash
-cd artifacts/meetmesh-frontend
-pnpm run dev
+pnpm run typecheck    # Validate TypeScript across all packages
+pnpm run test         # Run Vitest test suites (27 unit tests)
+pnpm run build        # Build static production bundles
 ```
 
-The frontend will be available at `http://localhost:5173` (Vite default).
+---
 
-### 5. Verify Setup
+## 🌐 100% Free Deployment Guide (No Credit Card Required)
 
-1. Open http://localhost:5173 in your browser
-2. You should see the Meetmesh landing page
-3. The frontend should connect to the backend API at `http://localhost:3001`
+Sixhuma is designed to run entirely on free cloud tiers with zero credit card needed:
 
-## Key Features
+### Step 1: Deploy Backend WebSocket Hub on [Render.com](https://render.com) (Free)
+1. Sign up on [Render.com](https://render.com) with your GitHub account.
+2. Click **New +** → **Blueprint** → Select your `Sixhuma` repository.
+3. Render automatically reads [`render.yaml`](render.yaml) and provisions a free Web Service with native WebSocket support.
+4. Note your deployed API URL (e.g., `https://sixhuma-api.onrender.com`).
 
-### Real-time Communication
-- **Socket.io** integration for instant message delivery
-- Live participant updates and status changes
-- Emoji reactions and real-time chat
+### Step 2: Deploy Frontend on [Vercel](https://vercel.com) or [Cloudflare Pages](https://pages.cloudflare.com) (Free)
+1. Sign up on [Vercel.com](https://vercel.com) with GitHub.
+2. Click **Add New Project** → Import `Sixhuma`.
+3. Configure the project:
+   - **Root Directory**: `sixhuma-svelte`
+   - **Framework Preset**: `SvelteKit`
+   - **Environment Variable**: `VITE_HUB_URL` = `https://sixhuma-api.onrender.com` (from Step 1)
+4. Click **Deploy**. Your app is live with global edge caching and free SSL.
 
-### Meeting Management
-- Create and join meetings with unique codes
-- Host controls for participant management
-- Waiting room support
-- Participant roles (host, organizer, speaker, attendee)
+---
 
-### Interactive Visualization
-- Spring physics-based node arrangement
-- Customizable participant tiers and positioning
-- Smooth animations and transitions
-- Mobile and desktop responsive design
+## 🐳 Docker Deployment
 
-### Collaboration Tools
-- Direct and global messaging
-- Real-time participant presence
-- Host panel with action controls
-- Interactive tooltips and UI
+To run the entire Sixhuma stack locally or on a VPS using Docker:
 
-## Project Commands
-
-### Workspace Level
 ```bash
-# Type check all projects
-pnpm run typecheck
-
-# Build all projects
-pnpm run build
-
-# Type check only libraries
-pnpm run typecheck:libs
+docker compose up --build
 ```
 
-### Individual Workspace Commands
-Each workspace (api-server, meetmesh-frontend, etc.) may have its own scripts. Check their `package.json` for available commands.
+- Web UI: `http://localhost:5173`
+- API / WebSocket: `http://localhost:3000`
 
-## Code Quality
+---
 
-This project follows consistent code style and quality standards:
+## ⚙️ Configuration & Environment Variables
 
-- **ESLint** - Linting and code quality checks (see `.eslintrc.json`)
-- **Prettier** - Code formatting (see `prettier.config.js`)
-- **TypeScript** - Strict type checking
-- **Structured Logging** - Using Pino for consistent logging
+### `sixhuma-api`
 
-## Git Workflow
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `PORT` | Listening HTTP/WS port | `3000` |
+| `NODE_ENV` | Runtime environment (`development`, `production`) | `development` |
+| `ALLOWED_ORIGIN` | Permitted CORS origins for socket & REST endpoints | `*` |
+| `DATA_DIR` | Storage path for meeting room JSON snapshots | `./data` |
 
-### Current Branch
-Main development branch: `frontend`
+### `sixhuma-svelte`
 
-### Common Operations
-```bash
-# Check git status
-git status
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `VITE_HUB_URL` | WebSocket server URL | `http://localhost:3000` in dev |
+| `VITE_MOCK_MODE` | Set `true` to run offline without a real backend | `false` |
 
-# View recent commits
-git log --oneline -10
+---
 
-# Create a feature branch
-git checkout -b feature/your-feature-name
-```
+## 🤝 Contributing
 
-## Environment Variables
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-### API Server (.env)
-- `PORT` - Server port (default: 3001)
-- `NODE_ENV` - Environment (development, production, test)
-- `DEBUG` - Enable verbose logging (true/false)
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'feat: add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Frontend (.env)
-- `VITE_HUB_URL` - Backend API URL (default: http://localhost:3001)
+---
 
-**Important**: Never commit `.env` files. Use `.env.example` as a template.
+## 📄 License
 
-## Project Structure
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
 
-### Backend (artifacts/api-server)
-- `src/index.ts` - Server entry point
-- `src/app.ts` - Express app configuration
-- `src/routes/` - API route handlers
-- `src/lib/` - Shared utilities and helpers
+---
 
-### Frontend (artifacts/meetmesh-frontend)
-- `src/main.tsx` - React entry point
-- `src/App.tsx` - Root component
-- `src/pages/` - Page components
-- `src/components/` - Reusable components
+## 👨‍💻 Creator & Support
 
-### Shared (meetmesh-core, lib/)
-- `meetmesh-core/` - Shared Socket.io client and types
-- `lib/api-zod/` - Request/response validation schemas
-- `lib/db/` - Database utilities
-- `lib/api-client-react/` - React hooks for API
+Created with care by **[Bharath](https://bharath.is-cool.dev/)**.
 
-## Contributing
+If you find Sixhuma useful for your meetups, conferences, or demo days, consider supporting:
 
-Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on:
-- Code style and formatting
-- Commit message conventions
-- Pull request process
-- Testing requirements
-
-## Troubleshooting
-
-### Build Fails with TypeScript Errors
-```bash
-# Clear node_modules and reinstall
-rm -rf node_modules pnpm-lock.yaml
-pnpm install
-```
-
-### Port Already in Use
-```bash
-# Change PORT in .env to an available port
-PORT=3002 pnpm run dev
-```
-
-### Frontend Can't Connect to Backend
-- Verify backend is running on the correct port
-- Check `VITE_HUB_URL` in frontend `.env`
-- Ensure CORS is properly configured in backend
-
-## Performance Considerations
-
-- The project uses `pnpm` for efficient dependency management
-- Platform-specific binaries are excluded for Linux optimization (see `pnpm-workspace.yaml`)
-- Minimum release age is enforced for npm packages for security (1 day)
-
-## Security
-
-- Environment variables are never committed to the repository
-- Supply chain attack defense through minimum release age enforcement
-- TypeScript for compile-time type safety
-- Structured logging for audit trails
-
-## License
-
-MIT (see LICENSE file for details)
-
-## Support
-
-For issues or questions, please check existing GitHub issues or create a new one with:
-- Clear description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- Environment details (Node version, OS, etc.)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-yellow.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/abhrams)
