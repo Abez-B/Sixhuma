@@ -257,6 +257,7 @@ export function setupSocketIO(server: HTTPServer) {
       scheduleExpiryIfEmpty(meeting, io);
     }
   }, 15_000);
+  heartbeatInterval.unref?.();
 
   // Hourly purge of abandoned meetings (> 48 hours old and 0 connected sockets)
   setInterval(() => {
