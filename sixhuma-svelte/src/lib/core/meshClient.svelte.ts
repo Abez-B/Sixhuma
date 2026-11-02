@@ -11,7 +11,12 @@ function getHubUrl(): string {
     return String(import.meta.env.VITE_HUB_URL);
   }
   if (typeof window !== 'undefined') {
-    if (window.location.hostname === 'localhost') return 'http://localhost:3000';
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:3000';
+    }
+    if (window.location.hostname.endsWith('github.io')) {
+      return 'https://sixhuma-api.onrender.com';
+    }
     return window.location.origin;
   }
   return 'http://localhost:3000';

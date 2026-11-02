@@ -38,7 +38,7 @@ jobs:
         env:
           NODE_ENV: production
           BASE_PATH: ${{ vars.BASE_PATH || '/Sixhuma' }}
-          VITE_HUB_URL: ${{ vars.VITE_HUB_URL || '' }}
+          VITE_HUB_URL: ${{ vars.VITE_HUB_URL || 'https://sixhuma-api.onrender.com' }}
         run: |
           pnpm -r --filter sixhuma-core --filter sixhuma-svelte run build
           touch sixhuma-svelte/build/.nojekyll
