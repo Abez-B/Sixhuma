@@ -3,7 +3,7 @@ services:
     name: sixhuma-api
     env: node
     plan: free
-    buildCommand: pnpm install --frozen-lockfile && pnpm -r --filter sixhuma-core --filter sixhuma-api run build
+    buildCommand: npm install -g pnpm@10.33.3 && pnpm install --frozen-lockfile && pnpm -r --filter sixhuma-core --filter sixhuma-api run build
     startCommand: node sixhuma-api/dist/index.mjs
     envVars:
       - key: PORT
