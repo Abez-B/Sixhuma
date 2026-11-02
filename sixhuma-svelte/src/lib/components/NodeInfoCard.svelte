@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { fade, fly } from 'svelte/transition';
+  import { fade, scale } from 'svelte/transition';
   import { type Participant, parseProfile } from 'sixhuma-core';
+  import { exportContactsAsVCard } from '$lib/utils/contactExport';
 
   const ensureUrl = (url?: string) => {
     if (!url) return '';
@@ -9,28 +10,23 @@
   };
 
   const ROLE_COLORS: Record<string, string> = {
-    host: 'rgba(255,215,0,0.12)',
-    speaker: 'rgba(59,130,246,0.12)',
-    organizer: 'rgba(139,92,246,0.12)',
-    attendee: 'rgba(20,184,166,0.1)',
-  };
-  const ROLE_TEXT: Record<string, string> = {
-    host: '#FFD700',
+    host: '#F5B82E',
     speaker: '#60a5fa',
     organizer: '#a78bfa',
     attendee: '#2dd4bf',
   };
-  const ROLE_BORDER: Record<string, string> = {
-    host: 'rgba(255,215,0,0.3)',
-    speaker: 'rgba(59,130,246,0.3)',
-    organizer: 'rgba(139,92,246,0.3)',
-    attendee: 'rgba(20,184,166,0.25)',
+
+  const ROLE_BADGE_BG: Record<string, string> = {
+    host: 'rgba(245, 184, 46, 0.15)',
+    speaker: 'rgba(96, 165, 250, 0.15)',
+    organizer: 'rgba(167, 139, 250, 0.15)',
+    attendee: 'rgba(45, 212, 191, 0.15)',
   };
 
   interface Props {
     participant: Participant;
     visited: boolean;
-    position: { x: number; y: number } | null;
+    position?: { x: number; y: number } | null;
     onClose: () => void;
     onMarkVisited: () => void;
     onMessage?: () => void;
@@ -39,469 +35,709 @@
   let {
     participant,
     visited,
-    position,
+    position = null,
     onClose,
     onMarkVisited,
     onMessage,
   }: Props = $props();
 
   let profile = $derived(parseProfile(participant.json));
-
-  let isMobile = $state(false);
-  $effect(() => {
-    isMobile = window.innerWidth < 768;
-    const check = () => (isMobile = window.innerWidth < 768);
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  });
-
   let roleKey = $derived(participant.role?.toLowerCase() || 'attendee');
+  let roleColor = $derived(ROLE_COLORS[roleKey] ?? '#E8742A');
+  let roleBg = $derived(ROLE_BADGE_BG[roleKey] ?? 'rgba(232, 116, 42, 0.15)');
 
-  $effect(() => {
-    if (!isMobile) return;
-    window.history.pushState({ nodeInfoOpen: true }, '');
-    const handlePop = () => onClose();
-    window.addEventListener('popstate', handlePop);
-    return () => {
-      window.removeEventListener('popstate', handlePop);
-      if (window.history.state?.nodeInfoOpen) {
-        window.history.back();
-      }
-    };
-  });
+  let imageError = $state(false);
 
-  let sheetElement: HTMLDivElement | undefined = $state();
-  let dragStartY: number | null = null;
-  let dragCurrentY = 0;
-
-  function handleTouchStart(e: TouchEvent) {
-    dragStartY = e.touches[0].clientY;
-    dragCurrentY = 0;
-  }
-
-  function handleTouchMove(e: TouchEvent) {
-    if (dragStartY === null) return;
-    const dy = e.touches[0].clientY - dragStartY;
-    if (dy < 0) return;
-    dragCurrentY = dy;
-    if (sheetElement) {
-      sheetElement.style.transform = `translateY(${dy}px)`;
-      sheetElement.style.transition = 'none';
-    }
-  }
-
-  function handleTouchEnd() {
-    if (dragStartY === null) return;
-    const threshold = 120;
-    if (dragCurrentY > threshold) {
+  // Keyboard accessibility: Escape closes the modal
+  function handleWindowKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
       onClose();
-    } else {
-      if (sheetElement) {
-        sheetElement.style.transform = '';
-        sheetElement.style.transition = '';
-      }
+    } else if (e.key === 'v' || e.key === 'V') {
+      // Shortcut to mark as visited
+      e.preventDefault();
+      onMarkVisited();
+    } else if ((e.key === 'm' || e.key === 'M') && onMessage) {
+      // Shortcut to message
+      e.preventDefault();
+      onMessage();
+      onClose();
     }
-    dragStartY = null;
-    dragCurrentY = 0;
+  }
+
+  function handleExportCard() {
+    exportContactsAsVCard([participant], new Set([participant.peerId]), {
+      eventName: 'Sixhuma Contact',
+    });
   }
 </script>
 
+<svelte:window onkeydown={handleWindowKeyDown} />
+
+<!-- Full-screen accessible backdrop -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="nodeinfo-overlay"
+  class="nodecard-backdrop"
   onclick={onClose}
-  in:fade={{ duration: 180 }}
-  out:fade={{ duration: 180 }}
-  style={isMobile
-    ? 'position: fixed; inset: 0; background-color: rgba(0,0,0,0.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: flex-end; z-index: 2000;'
-    : ''}
+  in:fade={{ duration: 150 }}
+  out:fade={{ duration: 150 }}
+  aria-hidden="true"
+></div>
+
+<!-- Modal Dialog Container -->
+<div
+  class="nodecard-wrapper"
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+  aria-labelledby="nodecard-attendee-name"
+  in:scale={{ start: 0.94, duration: 200 }}
+  out:scale={{ start: 0.94, duration: 150 }}
+  onclick={(e) => e.stopPropagation()}
+  onkeydown={(e) => e.stopPropagation()}
 >
-  <div
-    bind:this={sheetElement}
-    class="nodeinfo-panel"
-    onclick={(e) => e.stopPropagation()}
-    style={isMobile
-      ? 'width: 100%; max-width: none; max-height: 85vh; box-shadow: 0 -16px 48px rgba(0,0,0,0.7); border-radius: 20px 20px 0 0;'
-      : `position: fixed; left: ${Math.max(16, Math.min((position?.x || window.innerWidth / 2) - 150, window.innerWidth - 326))}px; top: ${Math.max(16, Math.min((position?.y || window.innerHeight / 2) - 140, window.innerHeight - 440))}px; z-index: 1001; box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07); width: 310px; max-height: min(85vh, 500px);`}
-    in:fly={isMobile ? { y: 400, duration: 320 } : { y: 12, duration: 220 }}
-    out:fly={isMobile ? { y: 400, duration: 320 } : { y: 12, duration: 220 }}
-  >
-    {#if isMobile}
-      <div
-        class="nodeinfo-drag-handle"
-        aria-hidden="true"
-        ontouchstart={handleTouchStart}
-        ontouchmove={handleTouchMove}
-        ontouchend={handleTouchEnd}
+  <!-- Card Header / Name Box -->
+  <div class="nodecard-name-box">
+    <div id="nodecard-attendee-name" class="nodecard-name">
+      {participant.displayName}
+    </div>
+    <div class="nodecard-role-pill" style="color: {roleColor}; background: {roleBg}; border-color: {roleColor};">
+      {participant.role || 'Attendee'}
+    </div>
+  </div>
+
+  <!-- Card Body Box -->
+  <div class="nodecard-body-box">
+    <!-- Top Status / Level Row -->
+    <div class="nodecard-status-bar">
+      <div class="nodecard-level">
+        <span class="nodecard-level-label">STATUS</span>
+        <span class="nodecard-level-value" style="color: {roleColor};">
+          {participant.role === 'Host' ? '★ Host' : participant.role === 'Speaker' ? '🎙 Speaker' : participant.role === 'Organizer' ? '⚡ Organizer' : '✦ Active'}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        class="nodecard-visit-badge"
+        class:is-visited={visited}
+        onclick={onMarkVisited}
+        aria-label={visited ? 'Participant is visited. Click to mark as unvisited' : 'Click to mark participant as visited'}
       >
-        <div class="nodeinfo-drag-pill"></div>
+        {#if visited}
+          <span class="nodecard-badge-dot visited-dot"></span>
+          <span class="nodecard-badge-text">✓ Visited</span>
+        {:else}
+          <span class="nodecard-badge-dot unvisited-dot"></span>
+          <span class="nodecard-badge-text">○ Unvisited</span>
+        {/if}
+      </button>
+    </div>
+
+    <!-- Image Area -->
+    <div class="nodecard-image-container">
+      {#if profile?.photo && !imageError}
+        <img
+          src={profile.photo}
+          alt={participant.displayName}
+          class="nodecard-avatar-img"
+          style="border-color: {visited ? '#10b981' : roleColor};"
+          onerror={() => (imageError = true)}
+        />
+      {:else}
+        <!-- Stylized Indaba attendee node placeholder -->
+        <div
+          class="nodecard-avatar-fallback"
+          style="border-color: {visited ? '#10b981' : roleColor}; background: {roleBg};"
+        >
+          <svg viewBox="0 0 100 100" class="nodecard-svg-mesh" aria-hidden="true">
+            <circle cx="50" cy="50" r="32" fill="none" stroke={roleColor} stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6" />
+            <line x1="50" y1="20" x2="50" y2="80" stroke={roleColor} stroke-width="1.5" opacity="0.4" />
+            <line x1="20" y1="50" x2="80" y2="50" stroke={roleColor} stroke-width="1.5" opacity="0.4" />
+            <circle cx="50" cy="50" r="18" fill={roleColor} opacity="0.8" />
+            <circle cx="50" cy="20" r="5" fill="#fff" />
+            <circle cx="50" cy="80" r="5" fill="#fff" />
+            <circle cx="20" cy="50" r="5" fill="#fff" />
+            <circle cx="80" cy="50" r="5" fill="#fff" />
+          </svg>
+          <span class="nodecard-initial" style="color: #fff;">
+            {participant.displayName.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Hobby / Headline -->
+    <div class="nodecard-headline">
+      {participant.role === 'Host' ? 'Event Host & Curator' : `${participant.role || 'Attendee'} @ Sixhuma`}
+    </div>
+
+    <!-- Bio (Scrollable) -->
+    <div class="nodecard-bio">
+      {profile?.bio || 'Gathering under the Indaba tree to connect, share knowledge, and explore ideas.'}
+    </div>
+
+    <!-- Tags (if available) -->
+    {#if profile?.tags && profile.tags.length > 0}
+      <div class="nodecard-tags-list">
+        {#each profile.tags as tag}
+          <span class="nodecard-tag-pill">#{tag}</span>
+        {/each}
       </div>
     {/if}
 
-    <button class="nodeinfo-close" onclick={onClose} aria-label="Close">✕</button>
+    <!-- Social links (LinkedIn / GitHub) -->
+    {#if profile?.linkedIn || profile?.github}
+      <div class="nodecard-social-links">
+        {#if profile?.linkedIn}
+          <a
+            href={ensureUrl(profile.linkedIn)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="nodecard-social-btn nodecard-li"
+            aria-label="View LinkedIn profile"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+            LinkedIn
+          </a>
+        {/if}
+        {#if profile?.github}
+          <a
+            href={ensureUrl(profile.github)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="nodecard-social-btn nodecard-gh"
+            aria-label="View GitHub profile"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            GitHub
+          </a>
+        {/if}
+      </div>
+    {/if}
 
-    <div
-      class="nodeinfo-head"
-      ontouchstart={isMobile ? handleTouchStart : undefined}
-      ontouchmove={isMobile ? handleTouchMove : undefined}
-      ontouchend={isMobile ? handleTouchEnd : undefined}
-    >
-      <div
-        class="nodeinfo-initial"
-        style="
-          background: {visited ? 'rgba(16,185,129,0.12)' : (ROLE_COLORS[roleKey] ?? 'rgba(255,255,255,0.06)')};
-          border-color: {visited ? 'rgba(16,185,129,0.3)' : (ROLE_BORDER[roleKey] ?? 'rgba(255,255,255,0.1)')};
-        "
+    <!-- High-accessibility Bottom Action Buttons -->
+    <div class="nodecard-actions">
+      <!-- Main Visited Toggle Button -->
+      <button
+        type="button"
+        class="nodecard-btn nodecard-btn-visit"
+        class:is-visited={visited}
+        onclick={onMarkVisited}
+        aria-label={visited ? 'Remove from visited list' : 'Mark participant as visited'}
       >
-        {#if profile?.photo}
-          <img src={profile.photo} alt={participant.displayName} class="nodeinfo-avatar" />
-        {:else}
-          <span style="font-size: 24px; color: {ROLE_TEXT[roleKey] ?? '#f5f5f5'};">
-            {participant.displayName.charAt(0).toUpperCase()}
-          </span>
-        {/if}
-      </div>
-
-      <div class="nodeinfo-name-block">
-        <div class="nodeinfo-name">{participant.displayName}</div>
-        <span
-          class="nodeinfo-role-pill"
-          style="
-            background: {ROLE_COLORS[roleKey] ?? 'rgba(255,255,255,0.06)'};
-            color: {ROLE_TEXT[roleKey] ?? '#888'};
-            border-color: {ROLE_BORDER[roleKey] ?? 'rgba(255,255,255,0.1)'};
-          "
-        >
-          {participant.role}
-        </span>
         {#if visited}
-          <span class="nodeinfo-visited-badge">✓ Visited</span>
+          <span class="btn-icon">✓</span>
+          <span>Marked as Visited</span>
+        {:else}
+          <span class="btn-icon">+</span>
+          <span>Mark as Visited</span>
         {/if}
-      </div>
-    </div>
+      </button>
 
-    <!-- Scrollable content area for bio, tags, links -->
-    <div class="nodeinfo-content-scroll">
-      <p class="nodeinfo-bio">
-        {profile?.bio || 'No bio provided.'}
-      </p>
-
-      {#if profile?.tags && profile.tags.length > 0}
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0;">
-          {#each profile.tags as t}
-            <span
-              style="padding: 3px 9px; border-radius: 4px; font-size: 11px; background: rgba(99, 102, 241, 0.08); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.2);"
-            >
-              {t}
-            </span>
-          {/each}
-        </div>
-      {/if}
-
-      {#if profile?.linkedIn || profile?.github}
-        <div class="nodeinfo-links">
-          {#if profile?.linkedIn}
-            <a
-              href={ensureUrl(profile.linkedIn)}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="nodeinfo-link nodeinfo-link-li"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
-                />
-              </svg>
-              LinkedIn
-            </a>
-          {/if}
-          {#if profile?.github}
-            <a
-              href={ensureUrl(profile.github)}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="nodeinfo-link nodeinfo-link-gh"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-                />
-              </svg>
-              GitHub
-            </a>
-          {/if}
-        </div>
-      {/if}
-    </div>
-
-    <!-- Pinned footer actions -->
-    <div class="nodeinfo-actions">
+      <!-- Message Button (if enabled) -->
       {#if onMessage}
         <button
-          class="nodeinfo-msg-btn"
+          type="button"
+          class="nodecard-btn nodecard-btn-msg"
           onclick={() => {
             onMessage();
             onClose();
           }}
+          aria-label="Send direct message to participant"
         >
-          💬 Message
+          <span class="btn-icon">💬</span>
+          <span>Message</span>
         </button>
       {/if}
-      <button class="nodeinfo-visit-btn" onclick={onMarkVisited}>
-        {visited ? 'Remove Visit' : 'Mark as Visited'}
-      </button>
     </div>
   </div>
+
+  <!-- Unique Side Action Tabs Ribbon (Matching the user's design reference) -->
+  <aside class="sideBtn-bar" aria-label="Quick Actions">
+    <!-- Visit Action Side Button -->
+    <button
+      type="button"
+      class="sideBtn sideBtn-visit"
+      class:is-visited={visited}
+      onclick={onMarkVisited}
+      title={visited ? 'Remove visited status (V)' : 'Mark as visited (V)'}
+      aria-label={visited ? 'Marked visited' : 'Mark as visited'}
+    >
+      <span>{visited ? '✓' : 'V'}</span>
+    </button>
+
+    <!-- Message Action Side Button -->
+    {#if onMessage}
+      <button
+        type="button"
+        class="sideBtn sideBtn-msg"
+        onclick={() => {
+          onMessage();
+          onClose();
+        }}
+        title="Send direct message (M)"
+        aria-label="Send message"
+      >
+        <span>M</span>
+      </button>
+    {/if}
+
+    <!-- Trade / Export vCard Action Side Button -->
+    <button
+      type="button"
+      class="sideBtn sideBtn-export"
+      onclick={handleExportCard}
+      title="Save contact card (E)"
+      aria-label="Export contact"
+    >
+      <span>E</span>
+    </button>
+
+    <!-- Close Side Button -->
+    <button
+      type="button"
+      class="sideBtn sideBtn-close"
+      onclick={onClose}
+      title="Close card (Esc)"
+      aria-label="Close card"
+    >
+      <span>C</span>
+    </button>
+  </aside>
 </div>
 
 <style>
-  .nodeinfo-overlay {
-    pointer-events: none;
-  }
-
-  .nodeinfo-panel {
-    pointer-events: all;
-    background: rgba(10, 10, 18, 0.95);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding: 18px;
-    color: #fff;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow: hidden;
-    box-sizing: border-box;
-  }
-
-  .nodeinfo-drag-handle {
-    display: flex;
-    justify-content: center;
-    padding: 4px 0 8px;
-    margin: -8px 0 0;
-    cursor: grab;
-    touch-action: none;
-    flex-shrink: 0;
-  }
-
-  .nodeinfo-drag-pill {
-    width: 36px;
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  .nodeinfo-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(255, 255, 255, 0.08);
-    border: none;
-    color: rgba(255, 255, 255, 0.5);
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+  /* ── 1. Full-Screen Backdrop ────────────────────────────────────────────── */
+  .nodecard-backdrop {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(12, 10, 9, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9990;
     cursor: pointer;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-    transition:
-      background 0.15s,
-      color 0.15s;
-  }
-  .nodeinfo-close:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
   }
 
-  .nodeinfo-head {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding-right: 32px;
-    flex-shrink: 0;
-  }
-
-  .nodeinfo-initial {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid transparent;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-
-  .nodeinfo-avatar {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-  }
-
-  .nodeinfo-name-block {
-    flex: 1;
-    min-width: 0;
+  /* ── 2. Centered Card Container ─────────────────────────────────────────── */
+  .nodecard-wrapper {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 290px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 40px);
+    z-index: 10000;
+    font-family: inherit;
+    user-select: none;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
+  }
+
+  /* ── 3. Name Header Box ─────────────────────────────────────────────────── */
+  .nodecard-name-box {
+    text-align: center;
+    background: #1e1916;
+    border: 2px solid #e8742a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(232, 116, 42, 0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 4px;
   }
 
-  .nodeinfo-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .nodecard-name {
+    font-size: 19px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    word-break: break-word;
   }
 
-  .nodeinfo-role-pill {
+  .nodecard-role-pill {
     display: inline-block;
     font-size: 11px;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 6px;
-    border: 1px solid transparent;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    align-self: flex-start;
-  }
-
-  .nodeinfo-visited-badge {
-    display: inline-block;
-    font-size: 11px;
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
     padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: 500;
+    border-radius: 9999px;
+    border: 1px solid currentColor;
   }
 
-  .nodeinfo-content-scroll {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+  /* ── 4. Main Body Box ───────────────────────────────────────────────────── */
+  .nodecard-body-box {
+    margin-top: 10px;
+    background: #171311;
+    border: 2px solid rgba(232, 116, 42, 0.5);
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-right: 4px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    gap: 10px;
+    box-sizing: border-box;
   }
 
-  .nodeinfo-content-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-  .nodeinfo-content-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .nodeinfo-content-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 4px;
-  }
-  .nodeinfo-content-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
-  }
-
-  .nodeinfo-bio {
-    font-size: 13px;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: break-word;
-  }
-
-  .nodeinfo-links {
+  /* ── 5. Status / Level Row ──────────────────────────────────────────────── */
+  .nodecard-status-bar {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 8px;
-    flex-wrap: wrap;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   }
 
-  .nodeinfo-link {
+  .nodecard-level {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .nodecard-level-label {
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.05em;
+  }
+
+  .nodecard-level-value {
+    font-weight: 700;
+  }
+
+  .nodecard-visit-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 3px 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+  }
+
+  .nodecard-visit-badge:hover {
+    background: rgba(232, 116, 42, 0.15);
+    border-color: rgba(232, 116, 42, 0.4);
+    color: #f5b82e;
+  }
+
+  .nodecard-visit-badge.is-visited {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #34d399;
+  }
+
+  .nodecard-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .unvisited-dot {
+    background: #9ca3af;
+  }
+
+  .visited-dot {
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+  }
+
+  /* ── 6. Profile Image / Avatar ──────────────────────────────────────────── */
+  .nodecard-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .nodecard-avatar-img {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #e8742a;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 16px rgba(232, 116, 42, 0.25);
+  }
+
+  .nodecard-avatar-fallback {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 3px solid #e8742a;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 16px rgba(232, 116, 42, 0.25);
+  }
+
+  .nodecard-svg-mesh {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .nodecard-initial {
+    font-size: 38px;
+    font-weight: 800;
+    z-index: 1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  }
+
+  /* ── 7. Headline & Bio ──────────────────────────────────────────────────── */
+  .nodecard-headline {
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #f5b82e;
+    line-height: 1.3;
+    padding: 0 4px;
+  }
+
+  .nodecard-bio {
+    max-height: 84px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.75);
+    overflow-y: auto;
+    padding: 0 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(232, 116, 42, 0.3) transparent;
+  }
+
+  /* ── 8. Tags & Social Links ─────────────────────────────────────────────── */
+  .nodecard-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .nodecard-tag-pill {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(245, 184, 46, 0.1);
+    color: #f5b82e;
+    border: 1px solid rgba(245, 184, 46, 0.25);
+  }
+
+  .nodecard-social-links {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .nodecard-social-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: 4px;
+    font-size: 11px;
     font-weight: 500;
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-radius: 6px;
     text-decoration: none;
-    transition:
-      opacity 0.15s,
-      background 0.15s;
-  }
-  .nodeinfo-link:hover {
-    opacity: 0.85;
+    transition: all 0.15s ease;
   }
 
-  .nodeinfo-link-li {
-    background: rgba(10, 102, 194, 0.18);
+  .nodecard-li {
+    background: rgba(10, 102, 194, 0.15);
     color: #60a5fa;
-    border: 1px solid rgba(10, 102, 194, 0.3);
+    border: 1px solid rgba(10, 102, 194, 0.35);
+  }
+  .nodecard-li:hover {
+    background: rgba(10, 102, 194, 0.25);
+    border-color: #60a5fa;
   }
 
-  .nodeinfo-link-gh {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  .nodecard-gh {
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .nodecard-gh:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.35);
   }
 
-  .nodeinfo-actions {
+  /* ── 9. High-Accessibility Action Buttons ────────────────────────────────── */
+  .nodecard-actions {
     display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .nodecard-btn {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+  }
+
+  .nodecard-btn:focus-visible {
+    outline: 2px solid #f5b82e;
+    outline-offset: 2px;
+  }
+
+  .nodecard-btn-visit {
+    background: rgba(232, 116, 42, 0.18);
+    border-color: #e8742a;
+    color: #ffffff;
+  }
+
+  .nodecard-btn-visit:hover {
+    background: #e8742a;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(232, 116, 42, 0.4);
+  }
+
+  .nodecard-btn-visit.is-visited {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #34d399;
+  }
+
+  .nodecard-btn-visit.is-visited:hover {
+    background: #10b981;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .nodecard-btn-msg {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.4);
+    color: #93c5fd;
+  }
+
+  .nodecard-btn-msg:hover {
+    background: rgba(96, 165, 250, 0.3);
+    color: #ffffff;
+  }
+
+  /* ── 10. Distinct Side Button Ribbon (Matching User's Reference) ────────── */
+  .sideBtn-bar {
+    position: absolute;
+    top: 55px;
+    right: -44px;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    flex-shrink: 0;
+    z-index: 10001;
   }
 
-  .nodeinfo-msg-btn {
-    flex: 1;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    color: #818cf8;
-    padding: 9px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
+  .sideBtn {
+    width: 44px;
+    height: 30px;
+    position: relative;
+    background: #2b221d;
+    border: 1.5px solid rgba(232, 116, 42, 0.6);
+    border-radius: 3px;
     cursor: pointer;
-    transition: all 0.15s;
-  }
-  .nodeinfo-msg-btn:hover {
-    background: rgba(99, 102, 241, 0.25);
-    color: #a5b4fc;
+    user-select: none;
+    overflow: hidden;
+    padding: 0;
+    transition: all 0.15s ease;
   }
 
-  .nodeinfo-visit-btn {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-    padding: 9px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
+  /* Triangular flag notch cutting into left of the button */
+  .sideBtn:after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border-left: 14px solid #171311; /* blends with card body background */
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
   }
-  .nodeinfo-visit-btn:hover {
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.25);
-    color: #10b981;
+
+  .sideBtn:hover {
+    background: #e8742a;
+    border-color: #f5b82e;
+    transform: translateX(3px);
+  }
+
+  .sideBtn:active {
+    background-color: #b45309;
+    transform: translateX(1px);
+  }
+
+  .sideBtn.is-visited {
+    background: #064e3b;
+    border-color: #10b981;
+  }
+  .sideBtn.is-visited:hover {
+    background: #059669;
+  }
+
+  .sideBtn span {
+    font-weight: 700;
+    font-size: 13px;
+    color: #ffffff;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(15%, -50%);
+    pointer-events: none;
+  }
+
+  .sideBtn.is-visited span {
+    color: #34d399;
+  }
+
+  .sideBtn:focus-visible {
+    outline: 2px solid #f5b82e;
+    outline-offset: 2px;
+  }
+
+  /* ── 11. Mobile Breakpoint Adjustments ───────────────────────────────────── */
+  @media (max-width: 440px) {
+    .nodecard-wrapper {
+      width: 270px;
+    }
+    .sideBtn-bar {
+      right: -38px;
+    }
+    .sideBtn {
+      width: 38px;
+      height: 28px;
+    }
+    .sideBtn:after {
+      border-left-width: 11px;
+      border-top-width: 14px;
+      border-bottom-width: 14px;
+    }
   }
 </style>
