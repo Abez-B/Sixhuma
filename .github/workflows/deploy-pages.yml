@@ -37,7 +37,7 @@ jobs:
       - name: Build packages
         env:
           NODE_ENV: production
-          BASE_PATH: ${{ vars.BASE_PATH || '' }}
+          BASE_PATH: ${{ vars.BASE_PATH || '/Sixhuma' }}
           VITE_HUB_URL: ${{ vars.VITE_HUB_URL || '' }}
         run: |
           pnpm -r --filter sixhuma-core --filter sixhuma-svelte run build
