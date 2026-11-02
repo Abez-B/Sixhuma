@@ -38,6 +38,7 @@
   let isMobile = $state(false);
   let linkCopied = $state(false);
   let activeMobileTab = $state<'controls' | 'radar'>('controls');
+  let showViewsMenu = $state(false);
 
   // Elapsed time tracker
   let elapsed = $state('00m 00s');
@@ -280,9 +281,11 @@
         <div class="hp-brand">
           <Logo size={24} />
           <span class="hp-title">
-            Host Dashboard
-            <span class="hp-title-sep"> · </span>
-            <span class="hp-title-role">{room.eventName}</span>
+            <span class="hp-title-main">Host Dashboard</span>
+            {#if room.eventName}
+              <span class="hp-title-sep">·</span>
+              <span class="hp-title-role">{room.eventName}</span>
+            {/if}
           </span>
         </div>
         <div class="hp-meta">
@@ -296,13 +299,16 @@
           >
         </div>
       </div>
+
       <div class="hp-topbar-actions">
+        <!-- Chat Button -->
         <button
           class={`hp-btn-secondary hp-chat-btn ${showChat ? 'hp-btn-active' : ''}`}
           onclick={() => {
             showChat = !showChat;
             if (showChat) chatDmPeerId = null;
           }}
+          aria-label="Toggle Event Chat"
           style="position: relative; display: inline-flex; align-items: center; gap: 6px;"
         >
           <svg
@@ -317,85 +323,147 @@
           >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          Chat
+          <span class="hp-btn-text">Chat</span>
           {#if hasUnread}
             <span class="hp-chat-unread-dot"></span>
           {/if}
         </button>
+
+        <!-- Desktop View Links -->
         <button
-          class="hp-btn-secondary"
+          class="hp-btn-secondary hp-desktop-only"
           onclick={() => window.open(`/present/${pathCode}`, '_blank')}
           title="Open big screen stage / presentation view"
         >
           Stage View
         </button>
         <button
-          class="hp-btn-secondary"
+          class="hp-btn-secondary hp-desktop-only"
           onclick={() => window.open(`/meeting/${pathCode}`, '_blank')}
           title="Open participant room view"
         >
           Room View
         </button>
+
+        <!-- Mobile Views Dropdown (clean, non-cluttering menu for small screens) -->
+        <div class="hp-views-dropdown-wrapper hp-mobile-only">
+          <button
+            type="button"
+            class="hp-btn-secondary hp-views-trigger"
+            onclick={() => (showViewsMenu = !showViewsMenu)}
+            aria-label="Open views menu"
+            aria-expanded={showViewsMenu}
+          >
+            <span>Views</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+
+          {#if showViewsMenu}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="hp-views-backdrop"
+              onclick={() => (showViewsMenu = false)}
+            ></div>
+            <div class="hp-views-menu">
+              <button
+                type="button"
+                class="hp-views-item"
+                onclick={() => {
+                  window.open(`/present/${pathCode}`, '_blank');
+                  showViewsMenu = false;
+                }}
+              >
+                <span class="hp-views-icon">📺</span>
+                <div>
+                  <div class="hp-views-item-title">Stage View</div>
+                  <div class="hp-views-item-desc">Big screen with QR code</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                class="hp-views-item"
+                onclick={() => {
+                  window.open(`/meeting/${pathCode}`, '_blank');
+                  showViewsMenu = false;
+                }}
+              >
+                <span class="hp-views-icon">👥</span>
+                <div>
+                  <div class="hp-views-item-title">Room View</div>
+                  <div class="hp-views-item-desc">Attendee perspective</div>
+                </div>
+              </button>
+            </div>
+          {/if}
+        </div>
+
         <button class="hp-btn-danger" onclick={() => (showCloseConfirm = true)}>
           {isMobile ? 'End' : 'End Event'}
         </button>
       </div>
     </div>
 
-    <!-- Mobile view switch tabs (visible only on mobile/narrow screens) -->
+    <!-- Mobile view switch tabs (sleek segmented pill control) -->
     <div class="hp-mobile-view-tabs" role="tablist" aria-label="Dashboard Views">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={activeMobileTab === 'controls'}
-        class="hp-m-tab {activeMobileTab === 'controls' ? 'active' : ''}"
-        onclick={() => (activeMobileTab = 'controls')}
-      >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+      <div class="hp-m-tab-container">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeMobileTab === 'controls'}
+          class="hp-m-tab {activeMobileTab === 'controls' ? 'active' : ''}"
+          onclick={() => (activeMobileTab = 'controls')}
         >
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-        <span>Room & Lobby</span>
-        <span class="hp-tab-count">
-          {meshClient.state.waitingRoom.length > 0
-            ? `+${meshClient.state.waitingRoom.length}`
-            : participants.length}
-        </span>
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={activeMobileTab === 'radar'}
-        class="hp-m-tab {activeMobileTab === 'radar' ? 'active' : ''}"
-        onclick={() => (activeMobileTab = 'radar')}
-      >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span>Room & Lobby</span>
+          <span class="hp-tab-count">
+            {meshClient.state.waitingRoom.length > 0
+              ? `+${meshClient.state.waitingRoom.length}`
+              : participants.length}
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeMobileTab === 'radar'}
+          class="hp-m-tab {activeMobileTab === 'radar' ? 'active' : ''}"
+          onclick={() => (activeMobileTab = 'radar')}
         >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 2a10 10 0 0 1 10 10" />
-          <path d="m12 12 7-7" />
-        </svg>
-        <span>Live Radar</span>
-      </button>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+            <circle cx="12" cy="12" r="2" />
+            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+            <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1" />
+          </svg>
+          <span>Live Radar</span>
+        </button>
+      </div>
     </div>
 
     <div class="hp-grid" style="margin-right: {showChat && !isMobile ? '320px' : '0'};">
@@ -527,11 +595,14 @@
       <main class="hp-main {isMobile && activeMobileTab !== 'radar' ? 'hp-hidden-mobile' : ''}">
         <div class="hp-mesh-card">
           <div class="hp-mesh-head">
-            <span class="hp-section-title">Live Mesh View</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="hp-mesh-live-dot"></span>
+              <span class="hp-section-title">Live Attendee Radar</span>
+            </div>
             <div class="hp-role-stats">
               {#each ['Host', 'Organizer', 'Speaker', 'Attendee'] as role}
                 {#if (roleCounts[role] || 0) > 0}
-                  <span class="hp-role-stat" style="color: {ROLE_COLORS[role]};">
+                  <span class="hp-role-pill" style="color: {ROLE_COLORS[role]}; border-color: {ROLE_COLORS[role]}44; background: {ROLE_COLORS[role]}18;">
                     {roleCounts[role]}&thinsp;{role}{(roleCounts[role] || 0) > 1 && role !== 'Host'
                       ? 's'
                       : ''}
