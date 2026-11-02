@@ -78,6 +78,7 @@ export class StateMachine {
   }
 
   setHostSecret(secret: string): void {
+    if (this._state.hostSecret === secret) return;
     this._state = { ...this._state, hostSecret: secret };
     this._listeners.forEach(l => l(this._state));
   }

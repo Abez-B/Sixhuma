@@ -1796,28 +1796,42 @@ MOBILE RESPONSIVE — all pages
   font-size: 9px; 
   padding: 3px 8px;
 }
-/* Reaction bar: sit above mobile nav, z-index must be > 400 (nav z-index) */
+/* Reaction bar on mobile: default sits at bottom with safe area padding */
 .reaction-bar { 
-  /* 64px nav + 8px gap above it */
-  bottom: calc(72px + var(--safe-area-inset-bottom)); 
-  padding: 8px 12px; 
-  gap: 6px;
-  border-radius: 50px;
-  background: rgba(12,12,18,0.96);
-  /* Must be above nav (400) but below nodeinfo overlay (2000) */
+  bottom: calc(16px + var(--safe-area-inset-bottom, 0px)); 
+  padding: 6px 14px; 
+  gap: 8px;
+  border-radius: 9999px;
+  background: rgba(15, 17, 23, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
   z-index: 450;
 }
 .reaction-btn { 
-  font-size: 24px; 
-  padding: 8px 10px;
-  min-width: 44px;
-  min-height: 44px;
+  font-size: 20px; 
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 /* Float toasts appear above the reaction bar */
 .reaction-floats { 
-  /* bar top ≈ 72+64 = 136px; bar height ≈ 60px; add 16px gap */
-  bottom: calc(148px + var(--safe-area-inset-bottom));
+  bottom: calc(72px + var(--safe-area-inset-bottom, 0px));
   z-index: 451;
+}
+/* In participant meeting room (.mr-root), sit above mobile nav (64px + 8px) */
+.mr-root .reaction-bar {
+  bottom: calc(72px + var(--safe-area-inset-bottom, 0px));
+}
+.mr-root .reaction-floats {
+  bottom: calc(128px + var(--safe-area-inset-bottom, 0px));
 }
 /* Chat panel — full-screen overlay on mobile */
 .chat-panel { 

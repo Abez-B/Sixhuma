@@ -835,8 +835,19 @@
   .zoom-btn--fit:hover { border-color: rgba(99,102,241,0.55); color: #818cf8; }
 
   @media (max-width: 768px) {
-    .mesh-zoom-controls { bottom: 80px; right: 12px; gap: 6px; }
-    .zoom-btn { width: 48px; height: 48px; font-size: 22px; border-radius: 12px; min-width: 48px; min-height: 48px; }
+    .mesh-zoom-controls {
+      bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+      right: 14px;
+      gap: 6px;
+    }
+    .zoom-btn {
+      width: 40px;
+      height: 40px;
+      font-size: 19px;
+      border-radius: 10px;
+      min-width: 40px;
+      min-height: 40px;
+    }
     .mesh-tooltip { display: none; }
   }
 </style>

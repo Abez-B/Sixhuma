@@ -97,6 +97,7 @@ export class MeshClientStore {
   }
 
   setHostSecret(secret: string): void {
+    if (this.state.hostSecret === secret) return;
     return this.client.setHostSecret(secret);
   }
 

@@ -250,20 +250,19 @@
 
 /* ── Mobile ────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Move controls to bottom-left on mobile so they don't overlap the mobile nav */
   .mesh-zoom-controls {
-    bottom: 80px; /* above mobile nav bar */
-    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    right: 14px;
     gap: 6px;
   }
 
   .zoom-btn {
-    width: 48px;
-    height: 48px;
-    font-size: 22px;
-    border-radius: 12px;
-    min-width: 48px;
-    min-height: 48px;
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+    border-radius: 10px;
+    min-width: 40px;
+    min-height: 40px;
   }
 
   /* Tooltip hidden on touch (no hover), keep it available but invisible */

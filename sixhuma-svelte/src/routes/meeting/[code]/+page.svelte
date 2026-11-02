@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { fly, fade } from 'svelte/transition';
@@ -95,57 +95,87 @@
     };
   });
 
-  // Reconnection and phase transitions
+  // Phase transitions: room ended
   $effect(() => {
-    if (isKicked) return;
     if (meshClient.state.phase === 'ended') {
       goto('/');
+    }
+  });
+
+  // Reconnection and room join
+  let isConnectingOrJoining = false;
+
+  $effect(() => {
+    if (isKicked) return;
+    if (!pathCode) return;
+
+    const currentRoom = untrack(() => meshClient.state.room);
+    const currentPhase = untrack(() => meshClient.state.phase);
+
+    // If already in this room and active, no need to join again
+    if (currentRoom?.meetingCode === pathCode && (currentPhase === 'active' || currentPhase === 'waiting')) {
       return;
     }
 
-    if (!meshClient.state.room || meshClient.state.phase === 'idle') {
-      if (!pathCode) return;
+    if (isConnectingOrJoining) return;
+    isConnectingOrJoining = true;
 
-      const isHost =
-        sessionStorage.getItem('meetmesh_is_host') === 'true' ||
-        Boolean(localStorage.getItem(`meetmesh_host_${pathCode}`));
-      const hostPeerForRoom = localStorage.getItem(`meetmesh_host_${pathCode}`);
-      const peerId =
-        sessionStorage.getItem('meetmesh_peer_id') ||
-        (isHost ? hostPeerForRoom : null) ||
-        localStorage.getItem(`meetmesh_peer_${pathCode}`) ||
-        localStorage.getItem('meetmesh_peer_id');
-      const lastName =
-        sessionStorage.getItem('meetmesh_last_name') ||
-        localStorage.getItem(`meetmesh_name_${pathCode}`) ||
-        localStorage.getItem('meetmesh_last_name') ||
-        (isHost ? 'Host' : '');
-      const lastJson =
-        sessionStorage.getItem('meetmesh_last_profile_json') ||
-        localStorage.getItem(`meetmesh_profile_${pathCode}`) ||
-        localStorage.getItem('meetmesh_last_profile_json') ||
-        '{}';
+    let cancelled = false;
 
-      const hostSecret = isHost
-        ? (sessionStorage.getItem(`meetmesh_secret_${pathCode}`) || localStorage.getItem(`meetmesh_secret_${pathCode}`) || undefined)
-        : undefined;
+    const connectAndJoin = async () => {
+      try {
+        const isHost =
+          sessionStorage.getItem('meetmesh_is_host') === 'true' ||
+          Boolean(localStorage.getItem(`meetmesh_host_${pathCode}`));
+        const hostPeerForRoom = localStorage.getItem(`meetmesh_host_${pathCode}`);
+        const peerId =
+          sessionStorage.getItem('meetmesh_peer_id') ||
+          (isHost ? hostPeerForRoom : null) ||
+          localStorage.getItem(`meetmesh_peer_${pathCode}`) ||
+          localStorage.getItem('meetmesh_peer_id');
+        const lastName =
+          sessionStorage.getItem('meetmesh_last_name') ||
+          localStorage.getItem(`meetmesh_name_${pathCode}`) ||
+          localStorage.getItem('meetmesh_last_name') ||
+          (isHost ? 'Host' : '');
+        const lastJson =
+          sessionStorage.getItem('meetmesh_last_profile_json') ||
+          localStorage.getItem(`meetmesh_profile_${pathCode}`) ||
+          localStorage.getItem('meetmesh_last_profile_json') ||
+          '{}';
 
-      if (peerId && (lastName || isHost)) {
-        sessionStorage.setItem('meetmesh_peer_id', peerId);
-        if (isHost) sessionStorage.setItem('meetmesh_is_host', 'true');
-        if (hostSecret) meshClient.setHostSecret(hostSecret);
+        const hostSecret = isHost
+          ? (sessionStorage.getItem(`meetmesh_secret_${pathCode}`) || localStorage.getItem(`meetmesh_secret_${pathCode}`) || undefined)
+          : undefined;
 
-        meshClient
-          .connect()
-          .then(() => meshClient.joinMeeting(pathCode, lastName || 'Host', peerId, lastJson, hostSecret))
-          .catch((err) => {
-            console.warn('[MeetingRoomPage] Reconnect failed:', err);
-            goto(`/join/${pathCode}`);
-          });
-      } else {
-        goto(`/join/${pathCode}`);
+        if (peerId && (lastName || isHost)) {
+          sessionStorage.setItem('meetmesh_peer_id', peerId);
+          if (isHost) sessionStorage.setItem('meetmesh_is_host', 'true');
+
+          await meshClient.connect();
+          if (cancelled) return;
+
+          if (hostSecret) {
+            meshClient.setHostSecret(hostSecret);
+          }
+
+          await meshClient.joinMeeting(pathCode, lastName || 'Host', peerId, lastJson, hostSecret);
+        } else {
+          if (!cancelled) goto(`/join/${pathCode}`);
+        }
+      } catch (err) {
+        console.warn('[MeetingRoomPage] Reconnect failed:', err);
+        if (!cancelled) goto(`/join/${pathCode}`);
+      } finally {
+        isConnectingOrJoining = false;
       }
-    }
+    };
+
+    connectAndJoin();
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   let room = $derived(meshClient.state.room);
