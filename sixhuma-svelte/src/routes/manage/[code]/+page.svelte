@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { v4 as uuid } from 'uuid';
   import { parseProfile, type Participant } from 'sixhuma-core';
   import { meshClient } from '$lib/core/meshClient.svelte';
@@ -124,14 +125,14 @@
         await meshClient.joinMeeting(pathCode, lastName, peerId, lastJson, hostSecret);
       } catch (err) {
         console.warn('[HostPanelPage] Reconnect failed:', err);
-        if (!cancelled) goto('/');
+        if (!cancelled) goto(base || '/');
       }
     };
 
     reconnect();
 
     const timeout = setTimeout(() => {
-      if (!cancelled && !meshClient.state.room) goto('/');
+      if (!cancelled && !meshClient.state.room) goto(base || '/');
     }, 12000);
 
     return () => {
@@ -214,7 +215,7 @@
   };
 
   let joinUrl = $derived(
-    typeof window !== 'undefined' ? `${window.location.origin}/join/${pathCode}` : ''
+    typeof window !== 'undefined' ? `${window.location.origin}${base}/join/${pathCode}` : ''
   );
 
   function admit(peerId: string) {
@@ -237,7 +238,7 @@
       console.error('Failed to end meeting:', err);
     } finally {
       showCloseConfirm = false;
-      goto('/');
+      goto(base || '/');
     }
   }
 

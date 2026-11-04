@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { page } from '$app/state';
   import { normalizeMeetingCode, isValidMeetingCode } from 'sixhuma-core';
   import { meshClient } from '$lib/core/meshClient.svelte';
@@ -59,7 +60,7 @@
     }
     busy = true;
     error = '';
-    goto(`/join/${normalized}`);
+    goto(`${base}/join/${normalized}`);
   }
 
   function handleHostSetup() {
@@ -71,9 +72,9 @@
         parsed.eventName = trimmed;
         localStorage.setItem('meetmesh_host_setup_cache', JSON.stringify(parsed));
       } catch {}
-      goto(`/host?event=${encodeURIComponent(trimmed)}`);
+      goto(`${base}/host?event=${encodeURIComponent(trimmed)}`);
     } else {
-      goto('/host');
+      goto(`${base}/host`);
     }
   }
 </script>
@@ -87,7 +88,7 @@
 
   <header class="mm-top-brand">
     <div class="mm-top-brand-inner">
-      <a href="/" class="mm-top-brand-left">
+      <a href="{base || '/'}" class="mm-top-brand-left">
         <Logo size={28} />
         <span class="mm-top-brand-name">Sixhuma</span>
       </a>

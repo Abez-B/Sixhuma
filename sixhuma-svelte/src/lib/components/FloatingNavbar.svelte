@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { page } from '$app/state';
   import { fly } from 'svelte/transition';
   import Logo from './Logo.svelte';
@@ -51,8 +52,9 @@
   }
 
   function scrollToSection(id: string) {
-    if (page.url.pathname !== '/') {
-      goto('/');
+    const homePath = base || '/';
+    if (page.url.pathname !== homePath && page.url.pathname !== `${homePath}/`) {
+      goto(homePath);
       setTimeout(() => {
         const el = document.getElementById(id);
         el?.scrollIntoView({ behavior: 'smooth' });
@@ -64,7 +66,7 @@
   }
 
   function handleBrandClick() {
-    goto('/');
+    goto(base || '/');
   }
 
   function handleExit() {
@@ -79,7 +81,7 @@
       );
       if (!confirmed) return;
     }
-    goto('/');
+    goto(base || '/');
   }
 </script>
 

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { v4 as uuid } from 'uuid';
   import { meshClient } from '$lib/core/meshClient.svelte';
   import MeshGraph from '$lib/components/MeshGraph.svelte';
@@ -122,10 +123,10 @@
   });
 
   let joinUrl = $derived(
-    typeof window !== 'undefined' ? `${window.location.origin}/join/${pathCode}` : ''
+    typeof window !== 'undefined' ? `${window.location.origin}${base}/join/${pathCode}` : ''
   );
   let displayUrl = $derived(
-    typeof window !== 'undefined' ? `${window.location.host}/join/${pathCode}` : ''
+    typeof window !== 'undefined' ? `${window.location.host}${base}/join/${pathCode}` : ''
   );
 </script>
 
@@ -146,7 +147,7 @@
         Meeting Ended
       </h2>
       <p style="color: #888; margin-bottom: 32px;">This presentation session has concluded.</p>
-      <TooltipButton text="Back to Home" onclick={() => goto('/')} variant="primary" />
+      <TooltipButton text="Back to Home" onclick={() => goto(base || '/')} variant="primary" />
     </div>
   </div>
 {:else if error}
@@ -162,7 +163,7 @@
       <p style="color: #888; margin-bottom: 32px; max-width: 400px;">{error}</p>
       <div style="display: flex; gap: 16px; justify-content: center;">
         <TooltipButton text="Retry Connection" onclick={join} variant="success" />
-        <TooltipButton text="Go Home" onclick={() => goto('/')} />
+        <TooltipButton text="Go Home" onclick={() => goto(base || '/')} />
       </div>
     </div>
   </div>
@@ -329,7 +330,7 @@
           <button
             type="button"
             class="pp-btn pp-btn-subtle"
-            onclick={() => goto(`/manage/${pathCode}`)}
+            onclick={() => goto(`${base}/manage/${pathCode}`)}
             title="Go to Host Dashboard"
           >
             <svg

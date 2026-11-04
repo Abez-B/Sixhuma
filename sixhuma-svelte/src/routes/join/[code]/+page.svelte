@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { v4 as uuid } from 'uuid';
   import { isValidMeetingCode } from 'sixhuma-core';
   import { meshClient } from '$lib/core/meshClient.svelte';
@@ -178,7 +179,7 @@
 
     try {
       await meshClient.joinMeeting(code, name.trim(), peerId, profileJson);
-      goto(`/join/${code}/waiting`);
+      goto(`${base}/join/${code}/waiting`);
     } catch {
       error = 'Failed to join meeting.';
       busy = false;
@@ -196,7 +197,7 @@
   <BackgroundPattern />
 
   <header class="jp-top-bar">
-    <a href="/" class="jp-back-home">
+    <a href="{base || '/'}" class="jp-back-home">
       <Logo size={22} />
       <span class="jp-back-name">Sixhuma</span>
       <span class="jp-back-arrow">← Back to Home</span>

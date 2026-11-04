@@ -3,11 +3,12 @@
   import TooltipButton from './TooltipButton.svelte';
   import { copyToClipboard } from '../utils/clipboard';
   import { toast } from '../core/toast.svelte';
+  import { base } from '$app/paths';
 
   let { code, eventName }: { code: string; eventName: string } = $props();
 
   const BASE_URL = typeof window !== 'undefined' ? window.location.origin : '';
-  let joinUrl = $derived(`${BASE_URL}/join/${code}`);
+  let joinUrl = $derived(`${BASE_URL}${base}/join/${code}`);
   let copied = $state(false);
 
   async function copy() {

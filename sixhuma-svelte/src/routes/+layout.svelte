@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import ToastContainer from '$lib/components/ToastContainer.svelte';
   import '$lib/styles/tailwind.css';
   import '$lib/styles/index.css';
@@ -16,7 +17,7 @@
 <svelte:head>
   <title>Sixhuma — Real-Time Spatial Networking</title>
   <meta name="description" content="Visualise your room as a live constellation of peers. Connect instantly with zero app download." />
-  <link rel="icon" href="/icon.svg" />
+  <link rel="icon" href="{base}/icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link

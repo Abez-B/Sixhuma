@@ -2,6 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { fly, fade } from 'svelte/transition';
   import { parseProfile, type Participant } from 'sixhuma-core';
   import { meshClient } from '$lib/core/meshClient.svelte';
@@ -98,7 +99,7 @@
   // Phase transitions: room ended
   $effect(() => {
     if (meshClient.state.phase === 'ended') {
-      goto('/');
+      goto(base || '/');
     }
   });
 
@@ -161,11 +162,11 @@
 
           await meshClient.joinMeeting(pathCode, lastName || 'Host', peerId, lastJson, hostSecret);
         } else {
-          if (!cancelled) goto(`/join/${pathCode}`);
+          if (!cancelled) goto(`${base}/join/${pathCode}`);
         }
       } catch (err) {
         console.warn('[MeetingRoomPage] Reconnect failed:', err);
-        if (!cancelled) goto(`/join/${pathCode}`);
+        if (!cancelled) goto(`${base}/join/${pathCode}`);
       } finally {
         isConnectingOrJoining = false;
       }
@@ -243,7 +244,7 @@
 
   function handleLeave() {
     meshClient.disconnect();
-    goto('/');
+    goto(base || '/');
   }
 </script>
 
@@ -297,7 +298,7 @@
         onclick={() => {
           localStorage.removeItem(`meetmesh_kicked_${pathCode}`);
           sessionStorage.removeItem(`meetmesh_kicked_${pathCode}`);
-          goto('/');
+          goto(base || '/');
         }}
         style="
           padding: 11px 26px;

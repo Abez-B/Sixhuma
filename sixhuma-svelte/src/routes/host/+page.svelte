@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { page } from '$app/state';
   import { v4 as uuid } from 'uuid';
   import { meshClient } from '$lib/core/meshClient.svelte';
@@ -76,7 +77,7 @@
         sessionStorage.setItem(`meetmesh_secret_${payload.meetingCode}`, payload.hostSecret);
         meshClient.setHostSecret(payload.hostSecret);
       }
-      goto(`/manage/${payload.meetingCode}`);
+      goto(`${base}/manage/${payload.meetingCode}`);
     };
 
     const onError = ({ detail }: { detail: string }) => {
@@ -189,7 +190,7 @@
   <BackgroundPattern />
 
   <header class="jp-top-bar">
-    <a href="/" class="jp-back-home">
+    <a href="{base || '/'}" class="jp-back-home">
       <Logo size={22} />
       <span class="jp-back-name">Sixhuma</span>
       <span class="jp-back-arrow">← Back to Home</span>

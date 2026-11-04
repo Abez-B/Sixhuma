@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { scale, fly } from 'svelte/transition';
   import { meshClient } from '$lib/core/meshClient.svelte';
   import WaitingList from '$lib/components/WaitingList.svelte';
@@ -56,7 +57,7 @@
     if (isKicked) return;
     const room = meshClient.state.room;
     if (meshClient.state.phase === 'active' && room?.meetingCode) {
-      goto(`/meeting/${room.meetingCode}`);
+      goto(`${base}/meeting/${room.meetingCode}`);
       return;
     }
 
@@ -74,7 +75,7 @@
           )
           .catch(console.error);
       } else if (pathCode) {
-        goto(`/join/${pathCode}`);
+        goto(`${base}/join/${pathCode}`);
       }
     }
   });
@@ -143,7 +144,7 @@
         onclick={() => {
           localStorage.removeItem(`meetmesh_kicked_${pathCode}`);
           sessionStorage.removeItem(`meetmesh_kicked_${pathCode}`);
-          goto('/');
+          goto(base || '/');
         }}
         style="
           padding: 11px 26px;
@@ -163,7 +164,7 @@
 {:else if !isHost}
   <div class="wr-root">
     <header class="jp-top-bar" style="position: absolute; top: 0; left: 0; right: 0;">
-      <a href="/" class="jp-back-home">
+      <a href="{base || '/'}" class="jp-back-home">
         <Logo size={22} />
         <span class="jp-back-name">Sixhuma</span>
         <span class="jp-back-arrow">· Room {pathCode}</span>
@@ -206,7 +207,7 @@
 {:else}
   <div class="wr-root">
     <header class="jp-top-bar" style="margin-bottom: 16px;">
-      <a href="/" class="jp-back-home">
+      <a href="{base || '/'}" class="jp-back-home">
         <Logo size={22} />
         <span class="jp-back-name">Sixhuma</span>
         <span class="jp-back-arrow">· Room {pathCode}</span>

@@ -1,14 +1,15 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { onMount } from 'svelte';
 
   onMount(() => {
     const code = page.params.code;
     if (code) {
-      goto(`/meeting/${code}`, { replaceState: true });
+      goto(`${base}/meeting/${code}`, { replaceState: true });
     } else {
-      goto('/', { replaceState: true });
+      goto(base || '/', { replaceState: true });
     }
   });
 </script>

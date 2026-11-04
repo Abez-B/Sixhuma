@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import Logo from './Logo.svelte';
 </script>
 
@@ -6,7 +7,7 @@
   <div class="footer-inner">
     <!-- Left: Brand & Portfolio -->
     <div class="footer-left">
-      <a href="/" class="footer-brand">
+      <a href="{base || '/'}" class="footer-brand">
         <Logo size={20} />
         <span class="footer-brand-name">Sixhuma</span>
       </a>
